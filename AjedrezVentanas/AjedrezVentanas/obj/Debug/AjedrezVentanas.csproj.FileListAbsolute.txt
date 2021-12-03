@@ -1,0 +1,13 @@
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\bin\Debug\AjedrezVentanas.exe.config
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\bin\Debug\AjedrezVentanas.exe
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\bin\Debug\AjedrezVentanas.pdb
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.csprojAssemblyReference.cache
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.Form1.resources
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.Form2.resources
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.Properties.Resources.resources
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.csproj.GenerateResource.cache
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.csproj.CoreCompileInputs.cache
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.exe
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.pdb
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.Form4.resources
+C:\Users\Christian\source\repos\AjedrezVentanas\AjedrezVentanas\obj\Debug\AjedrezVentanas.Form5.resources

@@ -1,0 +1,1722 @@
+using Ns1;
+using Ns2;
+using Ns3;
+using Ns4;
+using Ns5;
+using Ns6;
+using Ns8;
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography.X509Certificates;
+
+
+/*
+           b(0,7) n(1,7) b(2,7) n(3,7) b(4,7) n(5,7) b(6,7) n(7,7)
+           n(0,6) b(1,6) n(2,6) b(3,6) n(4,6) b(5,6) n(6,6) b(7,6)
+           b(0,5) n(1,5) b(2,5) n(3,5) b(4,5) n(5,5) b(6,5) n(7,5)
+           n(0,4) b(1,4) n(2,4) b(3,4) n(4,4) b(5,4) n(6,4) b(7,4)
+           b(0,3) n(1,3) b(2,3) n(3,3) b(4,3) n(5,3) b(6,3) n(7,3)
+           n(0,2) b(1,2) n(2,2) b(3,2) n(4,2) b(5,2) n(6,2) b(7,2) 
+           b(0,1) n(1,1) b(2,1) n(3,1) b(4,1) n(5,1) b(6,1) n(7,1)
+           n(0,0) b(1,0) n(2,0) b(3,0) n(4,0) b(5,0) n(6,0) b(7,0)  
+
+*/
+
+    ///  LAS PIEZAS NO NECESARIAMENTE SE TIENEN QUE MOVER
+
+namespace Ajedrez
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Random rd = new Random();
+
+            int[] posreina = { rd.Next(3, 5), rd.Next(3, 5) }; /// SPAWNEA EN EL CENTRO           
+
+            int[] posrey = { rd.Next(1, 6), rd.Next(1, 6) };
+
+            int[] poscaballob = { rd.Next(2, 5), rd.Next(2, 4) };
+
+            int[] poscaballon = { rd.Next(2, 6), rd.Next(4, 6) };
+
+            int[] postorreb = { 0, 0 };
+
+            int[] postorren = { 7, 7 };
+
+            int[,] casillasblancas = {{1,0},{3,0},{5,0},{7,0},{0,1},{2,1},{4,1},{6,1},
+                                      {1,2},{3,2},{5,2},{7,2},{0,3},{2,3},{4,3},{6,3},
+                                      {1,4},{3,4},{5,4},{7,4},{0,5},{2,5},{4,5},{6,5},
+                                      {1,6},{3,6},{5,6},{7,6},{0,7},{2,7},{4,7},{6,7} };
+
+            int[,] casillasnegras = { {0,0},{2,0},{4,0},{6,0},{1,1},{3,1},{5,1},{7,1},
+                                      {0,2},{2,2},{4,2},{6,2},{1,3},{3,3},{5,3},{7,3},
+                                      {0,4},{2,4},{4,4},{6,4},{1,5},{3,5},{5,5},{7,5},
+                                      {0,6},{2,6},{4,6},{6,6},{1,7},{3,7},{5,7},{7,7} };
+
+            int random = rd.Next(0, 32);
+            int[] posalfilb = { casillasblancas[random, 0], casillasblancas[random, 1] };
+            random = rd.Next(0, 32);
+            int[] posalfiln = { casillasnegras[random, 0], casillasnegras[random, 1] };
+
+            NoPisar(posreina, posrey, postorreb, postorren, poscaballob, poscaballon, posalfilb, posalfiln);
+
+            Tablero tablero = new Tablero();
+
+            Tablero tablerodeamenazas = new Tablero();
+
+            /// posreina posrey postorreb postorren poscaballob poscaballon posalfilb posalfiln
+
+            Reina queen = new Reina(posreina, tablerodeamenazas, tablero);
+            Rey king = new Rey(posrey, tablerodeamenazas, tablero);
+            Alfil wbishop = new Alfil(posalfilb, tablerodeamenazas, tablero, 1);
+            Alfil bbishop = new Alfil(posalfiln, tablerodeamenazas, tablero, 0);
+            Caballo bhorse = new Caballo(poscaballon, tablerodeamenazas, tablero);
+            Caballo whorse = new Caballo(poscaballob, tablerodeamenazas, tablero);
+            Torre wtower = new Torre(postorreb, tablerodeamenazas, tablero);
+            Torre btower = new Torre(postorren, tablerodeamenazas, tablero);
+            Pieza[] array0 = { queen, king, wbishop, bbishop, whorse, bhorse, wtower, btower };
+
+            int[,] matrizposiciones = tablero.GetXY();
+            int[,] matrizamenazadas = tablerodeamenazas.GetXY();
+
+            ImprimirTablero(matrizposiciones);
+            Console.Write("\n");
+            ImprimirTablero(matrizamenazadas);
+
+            MoverPiezasTableroComun(array0, matrizamenazadas);
+            ImprimirTablero(matrizposiciones);
+            Console.Write("\n");
+            ImprimirTablero(matrizamenazadas);
+
+            List<Pieza> piezas = new List<Pieza>();
+            piezas.Add(queen);
+            piezas.Add(king);
+            piezas.Add(wbishop);
+            piezas.Add(bbishop);
+            piezas.Add(whorse);
+            piezas.Add(bhorse);
+            piezas.Add(wtower);
+            piezas.Add(btower);
+
+            List<Tablero> tableros = new List<Tablero>();
+            tableros.Add(tablero);
+            tableros.Add(tablerodeamenazas);
+
+        }
+
+        public static void ImprimirTablero(int[,] matrizposiciones)
+        {
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[0, 0], matrizposiciones[0, 1], matrizposiciones[0, 2], matrizposiciones[0, 3], matrizposiciones[0, 4], matrizposiciones[0, 5], matrizposiciones[0, 6], matrizposiciones[0, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[1, 0], matrizposiciones[1, 1], matrizposiciones[1, 2], matrizposiciones[1, 3], matrizposiciones[1, 4], matrizposiciones[1, 5], matrizposiciones[1, 6], matrizposiciones[1, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[2, 0], matrizposiciones[2, 1], matrizposiciones[2, 2], matrizposiciones[2, 3], matrizposiciones[2, 4], matrizposiciones[2, 5], matrizposiciones[2, 6], matrizposiciones[2, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[3, 0], matrizposiciones[3, 1], matrizposiciones[3, 2], matrizposiciones[3, 3], matrizposiciones[3, 4], matrizposiciones[3, 5], matrizposiciones[3, 6], matrizposiciones[3, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[4, 0], matrizposiciones[4, 1], matrizposiciones[4, 2], matrizposiciones[4, 3], matrizposiciones[4, 4], matrizposiciones[4, 5], matrizposiciones[4, 6], matrizposiciones[4, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[5, 0], matrizposiciones[5, 1], matrizposiciones[5, 2], matrizposiciones[5, 3], matrizposiciones[5, 4], matrizposiciones[5, 5], matrizposiciones[5, 6], matrizposiciones[5, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[6, 0], matrizposiciones[6, 1], matrizposiciones[6, 2], matrizposiciones[6, 3], matrizposiciones[6, 4], matrizposiciones[6, 5], matrizposiciones[6, 6], matrizposiciones[6, 7]);
+            Console.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7}", matrizposiciones[7, 0], matrizposiciones[7, 1], matrizposiciones[7, 2], matrizposiciones[7, 3], matrizposiciones[7, 4], matrizposiciones[7, 5], matrizposiciones[7, 6], matrizposiciones[7, 7]);
+            Console.WriteLine("\n");
+            Console.ReadLine();
+        }
+        public static void MoverPiezasTableroComun(Pieza[] piezas, int[,] matriz)
+        {
+            int contador = 0;
+
+            while (true)
+            { /// LA CANTIDAD DE CASILLAS NO IGUALES A CERO DE LA MATRIZ TIENE QUE SER IGUAL A  64
+                contador = 0;
+                for (int i = 0; i < 8; i++)
+                {
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (matriz[i, j] != 0) { contador++; }
+                    }
+                }
+                if (contador >= 64) return;
+                for (int i = 0; i < 7; i++)
+                {
+                    piezas[i].desamenazar();
+                    piezas[i].desocuparlugar(piezas[i].GetPos()[0], piezas[i].GetPos()[1]);
+                    piezas[i].salto();
+                    piezas[i].lugaresamenazados();
+                    piezas[i].ocuparlugar();
+
+                }                
+            }
+
+        }
+        public static void NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (true)
+            {
+                cont = 0;
+                for (int i = 0; i < 6; i++)
+                {
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            posiciones[i, 0] = rdx.Next(0, 8);
+                            posiciones[i, 1] = rdy.Next(0, 8);
+                        }
+                        else
+                        {
+                            cont++;
+                            if (cont >= 8) return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+///  TORRES FIJAS, ALFILES NO SE CRUCEN A LA REINA, REY ESTA BIEN, REINA ESTA BIEN, CABALLOS ENTRE EN Y (0 1, 6 7) X (0 1, 6 7)
+
+namespace Ns1
+{
+    public class Pieza
+    {
+        public Pieza()
+        {
+
+        }
+        ///virtual public int Mover(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] v6, int[] v7) { return 0; }
+        ///virtual public void Mover(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] v6, int[] v7) { }
+        ///virtual public int lugaresamenazados() { return 0; }
+        virtual public void salto() { }
+        virtual public void lugaresamenazados() { }
+        virtual public void desamenazar() { }
+        virtual public void ocuparlugar() { }
+        virtual public void desocuparlugar(int x, int y) { }
+        public Tablero getMatriza() { return null; }
+        public virtual int[] GetPos() { int[] r = { 0, 0 }; return r; }
+        public virtual int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2) { return 0; }
+    }
+}
+namespace Ns2
+{
+    public class Reina : Pieza
+    {
+        Tablero matriza, matrizp;
+        int[] POS = { 0, 0 };
+        public Reina(int[] xy, Tablero matrizamenaza, Tablero matrizpos)
+        {
+
+            matriza = matrizamenaza;
+            matrizp = matrizpos;
+            POS[0] = xy[0];
+            POS[1] = xy[1];
+            ocuparlugar();
+            lugaresamenazados();
+
+        }
+        public override void salto()
+        {
+            Random rd = new Random();
+
+            POS[0] = rd.Next(3, 5);
+            POS[1] = rd.Next(3, 5);
+
+        }
+        override public int[] GetPos() { return POS; }
+        public override int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (cont < 8)
+            {
+                cont = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            cont++;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        public override void desamenazar()
+        {
+            int freecases = 0, aux1 = 0;
+            matriza.desamenazarlugar(POS[1], POS[0]);
+            ///PARTE DE TORRE ARRIBA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] - i > -1)
+                {
+                    matriza.desamenazarlugar(POS[1] - i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE ABAJO 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] + i < 8)
+                {
+                    matriza.desamenazarlugar(POS[1] + i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE IZQUIERDA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] - i > -1) { matriza.desamenazarlugar(POS[1], POS[0] - i); } else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE DERECHA  
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] + i < 8) { matriza.desamenazarlugar(POS[1], POS[0] + i); } else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] - i > -1)
+                {
+                    matriza.desamenazarlugar(POS[1] - i, POS[0] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+            for (int j = 1; j < 7; j++)
+            {
+                if (POS[0] + j < 8 && POS[1] + j < 8)
+                {
+                    matriza.desamenazarlugar(POS[1] + j, POS[0] + j);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] + i < 8)
+                {
+                    matriza.desamenazarlugar(POS[0] - i, POS[1] + i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] + i < 8 && POS[1] - i > -1)
+                {
+                    matriza.desamenazarlugar(POS[0] + i, POS[1] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+        }
+        public override void lugaresamenazados()
+        {
+
+            int freecases = 0, aux1 = 0;
+            matriza.amenazarlugar(POS[1], POS[0]);
+            ///PARTE DE TORRE ARRIBA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] - i > -1)
+                {
+                    matriza.amenazarlugar(POS[1] - i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE ABAJO 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] + i < 8)
+                {
+                    matriza.amenazarlugar(POS[1] + i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE IZQUIERDA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] - i > -1) { matriza.amenazarlugar(POS[1], POS[0] - i); } else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE DERECHA  
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] + i < 8) { matriza.amenazarlugar(POS[1], POS[0] + i); } else { break; }
+                ///contador++;
+            }
+            ///if (POS[0] < POS[1]) { aux1 = POS[0]; } else { aux1 = POS[1]; }
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] - i > -1)
+                {
+                    matriza.amenazarlugar(POS[1] - i, POS[0] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+            for (int j = 1; j < 7; j++)
+            {
+                if (POS[0] + j < 8 && POS[1] + j < 8)
+                {
+                    matriza.amenazarlugar(POS[1] + j, POS[0] + j);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] + i < 8)
+                {
+                    matriza.amenazarlugar(POS[0] - i, POS[1] + i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] + i < 8 && POS[1] - i > -1)
+                {
+                    matriza.amenazarlugar(POS[0] + i, POS[1] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+
+            ///return contador;
+
+        }
+        override public void ocuparlugar()
+        {
+            matrizp.setXY(POS[0], POS[1], 1);
+        }
+        override public void desocuparlugar(int x, int y)
+        {
+            matrizp.setXY(x, y, 0);
+        }
+        public Tablero getMatriza() { return matriza; }
+    }
+}
+namespace Ns3
+{
+    public class Rey : Pieza
+    {
+        public Tablero matriza, matrizp;
+        int[] POS = { 0, 0 };
+
+        public Rey(int[] xy, Tablero matrizamenaza, Tablero matrizpos)
+        {
+
+            matriza = matrizamenaza;
+            matrizp = matrizpos;
+            POS[0] = xy[0];
+            POS[1] = xy[1];
+            ocuparlugar();
+            lugaresamenazados();
+
+        }
+        public override void salto()
+        {
+            Random rd = new Random();
+
+            POS[0] = rd.Next(1, 6);
+            POS[1] = rd.Next(1, 6);
+
+        }
+        override public int[] GetPos() { return POS; }
+        public override void desamenazar()
+        {
+            int contador = 0, freecases = 0, aux1 = 0;
+
+            matriza.desamenazarlugar(POS[1], POS[0]);
+            ///PARTE DE TORRE ARRIBA 
+            if (POS[1] - 1 > -1) { matriza.desamenazarlugar(POS[1] - 1, POS[0]); }
+            ///contador++;            
+            ///PARTE DE TORRE ABAJO 
+            if (POS[1] + 1 < 8) { matriza.desamenazarlugar(POS[1] + 1, POS[0]); }
+            ///contador++;
+            ///PARTE DE TORRE IZQUIERDA 
+            if (POS[0] - 1 > -1) { matriza.desamenazarlugar(POS[1], POS[0] - 1); }
+            ///contador++;
+            ///PARTE DE TORRE DERECHA 
+            if (POS[0] + 1 < 8) { matriza.desamenazarlugar(POS[1], POS[0] + 1); }
+            ///contador++;            
+            ///
+            if (POS[0] < POS[1]) { aux1 = POS[0]; } else { aux1 = POS[1]; }
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            if (POS[0] - 1 > -1 && POS[1] - 1 > -1)
+            {
+                matriza.desamenazarlugar(POS[1] - 1, POS[0] - 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+
+            if (POS[0] + 1 < 8 && POS[1] + 1 < 8)
+            {
+                matriza.desamenazarlugar(POS[1] + 1, POS[0] + 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+
+            if (POS[0] - 1 > -1 && POS[1] + 1 < 8)
+            {
+                matriza.desamenazarlugar(POS[0] - 1, POS[1] + 1);
+            }
+
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+
+            if (POS[0] + 1 < 8 && POS[1] - 1 > -1)
+            {
+                matriza.desamenazarlugar(POS[0] + 1, POS[1] - 1);
+            }
+        }
+        public override void lugaresamenazados()
+        {
+            int contador = 0, freecases = 0, aux1 = 0;
+
+            matriza.amenazarlugar(POS[1], POS[0]);
+            ///PARTE DE TORRE ARRIBA 
+            if (POS[1] - 1 > -1) { matriza.amenazarlugar(POS[1] - 1, POS[0]); }
+            ///contador++;            
+            ///PARTE DE TORRE ABAJO 
+            if (POS[1] + 1 < 8) { matriza.amenazarlugar(POS[1] + 1, POS[0]); }
+            ///contador++;
+            ///PARTE DE TORRE IZQUIERDA 
+            if (POS[0] - 1 > -1) { matriza.amenazarlugar(POS[1], POS[0] - 1); }
+            ///contador++;
+            ///PARTE DE TORRE DERECHA 
+            if (POS[0] + 1 < 8) { matriza.amenazarlugar(POS[1], POS[0] + 1); }
+            ///contador++;            
+            ///
+            if (POS[0] < POS[1]) { aux1 = POS[0]; } else { aux1 = POS[1]; }
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            if (POS[0] - 1 > -1 && POS[1] - 1 > -1)
+            {
+                matriza.amenazarlugar(POS[1] - 1, POS[0] - 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+
+            if (POS[0] + 1 < 8 && POS[1] + 1 < 8)
+            {
+                matriza.amenazarlugar(POS[1] + 1, POS[0] + 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+
+            if (POS[0] - 1 > -1 && POS[1] + 1 < 8)
+            {
+                matriza.amenazarlugar(POS[0] - 1, POS[1] + 1);
+            }
+
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+
+            if (POS[0] + 1 < 8 && POS[1] - 1 > -1)
+            {
+                matriza.amenazarlugar(POS[0] + 1, POS[1] - 1);
+            }
+
+        }
+        public override int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (cont < 8)
+            {
+                cont = 1;
+                for (int i = 0; i < 5; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            cont++;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        override public void ocuparlugar()
+        {
+            matrizp.setXY(POS[0], POS[1], 2);
+        }
+        override public void desocuparlugar(int x, int y)
+        {
+            matrizp.setXY(x, y, 0);
+        }
+        public Tablero getMatriza() { return matriza; }
+    }
+}
+namespace Ns4
+{
+    public class Alfil : Pieza
+    {
+        public Tablero matriza, matrizp;
+        public int Color;
+        int[] POS = { 0, 0 };
+
+        public Alfil(int[] xy, Tablero matrizamenaza, Tablero matrizpos, int color)
+        {
+
+            matriza = matrizamenaza;
+            matrizp = matrizpos;
+            POS[0] = xy[0];
+            POS[1] = xy[1];
+            Color = color;
+            ocuparlugar();
+            lugaresamenazados();
+
+        }
+        public override void salto()
+        {
+            Random rd = new Random();
+
+            int[,] casillasblancas = {{1,0},{3,0},{5,0},{7,0},{0,1},{2,1},{4,1},{6,1},
+                                      {1,2},{3,2},{5,2},{7,2},{0,3},{2,3},{4,3},{6,3},
+                                      {1,4},{3,4},{5,4},{7,4},{0,5},{2,5},{4,5},{6,5},
+                                      {1,6},{3,6},{5,6},{7,6},{0,7},{2,7},{4,7},{6,7} };
+
+            int[,] casillasnegras = { {0,0},{2,0},{4,0},{6,0},{1,1},{3,1},{5,1},{7,1},
+                                      {0,2},{2,2},{4,2},{6,2},{1,3},{3,3},{5,3},{7,3},
+                                      {0,4},{2,4},{4,4},{6,4},{1,5},{3,5},{5,5},{7,5},
+                                      {0,6},{2,6},{4,6},{6,6},{1,7},{3,7},{5,7},{7,7} };
+
+            if (Color == 1) {
+                POS[0] = casillasblancas[rd.Next(0, 32), 0];
+                POS[1] = casillasblancas[rd.Next(0, 32), 1];
+            } else {
+                POS[0] = casillasnegras[rd.Next(0, 32), 0];
+                POS[1] = casillasnegras[rd.Next(0,32), 1];
+            }
+
+
+        }
+        override public int[] GetPos() { return POS; }
+        public override void desamenazar()
+        {
+            int freecases = 0, aux1 = 0;
+
+            matriza.desamenazarlugar(POS[0], POS[1]);
+            if (POS[0] < POS[1]) { aux1 = POS[0]; } else { aux1 = POS[1]; }
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] - i > -1)
+                {
+                    matriza.desamenazarlugar(POS[1] - i, POS[0] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+            for (int j = 1; j < 7; j++)
+            {
+                if (POS[0] + j < 8 && POS[1] + j < 8)
+                {
+                    matriza.desamenazarlugar(POS[1] + j, POS[0] + j);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] + i < 8)
+                {
+                    matriza.desamenazarlugar(POS[0] - i, POS[1] + i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] + i < 8 && POS[1] - i > -1)
+                {
+                    matriza.desamenazarlugar(POS[0] + i, POS[1] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+        }
+        public override void lugaresamenazados()
+        {
+            int freecases = 0, aux1 = 0;
+
+            matriza.amenazarlugar(POS[0], POS[1]);
+            if (POS[0] < POS[1]) { aux1 = POS[0]; } else { aux1 = POS[1]; }
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] - i > -1)
+                {
+                    matriza.amenazarlugar(POS[1] - i, POS[0] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+            for (int j = 1; j < 7; j++)
+            {
+                if (POS[0] + j < 8 && POS[1] + j < 8)
+                {
+                    matriza.amenazarlugar(POS[1] + j, POS[0] + j);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] - i > -1 && POS[1] + i < 8)
+                {
+                    matriza.amenazarlugar(POS[0] - i, POS[1] + i);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+            for (int i = 1; i < 7; i++)
+            {
+                if (POS[0] + i < 8 && POS[1] - i > -1)
+                {
+                    matriza.amenazarlugar(POS[0] + i, POS[1] - i);
+                }
+                else { break; }
+                ///contador++;
+            }
+        }
+        public override int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (cont < 8)
+            {
+                cont = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            cont++;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        override public void ocuparlugar()
+        {
+            matrizp.setXY(POS[0], POS[1], 3);
+        }
+        override public void desocuparlugar(int x, int y)
+        {
+            matrizp.setXY(x, y, 0);
+        }
+        public Tablero getMatriza() { return matriza; }
+    }
+}
+namespace Ns5
+{
+    public class Caballo : Pieza
+    {
+        public Tablero matriza, matrizp;
+        int[] POS = { 0, 0 };
+
+        public Caballo(int[] xy, Tablero matrizamenaza, Tablero matrizpos)
+        {
+
+            matriza = matrizamenaza;
+            matrizp = matrizpos;
+            POS[0] = xy[0];
+            POS[1] = xy[1];
+            ocuparlugar();
+            lugaresamenazados();
+
+        }
+        public override void salto()
+        {
+            Random rd = new Random();
+
+            POS[0] = rd.Next(2, 4);
+            POS[1] = rd.Next(4, 6);
+
+        }
+        override public int[] GetPos() { return POS; }
+        public override void desamenazar()
+        {
+            int aux1 = 0, aux2 = 0;
+
+            matriza.desamenazarlugar(POS[1], POS[0]);
+            /// 0
+            if (POS[0] > -1 && POS[1] > 1)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] - 2;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 1
+            if (POS[0] > 1 && POS[1] > 0)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] - 1;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 2
+            if (POS[0] > 1 && POS[1] < 6)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] + 1;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 3
+            if (POS[0] > 1 && POS[1] < 7)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] + 2;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 4
+            if (POS[0] < 8 && POS[1] > 1)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] - 2;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 5
+            if (POS[0] < 6 && POS[1] > 0)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] - 1;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 6
+            if (POS[0] > 0 && POS[0] < 8 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] + 1;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+            /// 7
+            if (POS[0] < 6 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] + 2;
+                matriza.desamenazarlugar(aux2, aux1);
+            }
+        }
+        public override void lugaresamenazados()
+        {
+            int aux1 = 0, aux2 = 0;
+            matriza.amenazarlugar(POS[1], POS[0]);
+            /// 0
+            if (POS[0] > -1 && POS[1] > 1)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] - 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 1
+            if (POS[0] > 1 && POS[1] > 0)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] - 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 2
+            if (POS[0] > 1 && POS[1] < 6)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] + 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 3
+            if (POS[0] > 1 && POS[1] < 7)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] + 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 4
+            if (POS[0] < 8 && POS[1] > 1)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] - 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 5
+            if (POS[0] < 6 && POS[1] > 0)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] - 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 6
+            if (POS[0] > 0 && POS[0] < 8 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] + 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 7
+            if (POS[0] < 6 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] + 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+        }
+        public override int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (cont < 8)
+            {
+                cont = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            cont++;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        override public void ocuparlugar()
+        {
+            matrizp.setXY(POS[0], POS[1], 4);
+        }
+        override public void desocuparlugar(int x, int y)
+        {
+            matrizp.setXY(x, y, 0);
+        }
+        public Tablero getMatriza() { return matriza; }
+    }
+}
+namespace Ns6
+{
+    public class Torre : Pieza
+    {
+        public Tablero matriza, matrizp;
+        int[] POS = { 0, 0 };
+
+        public Torre(int[] xy, Tablero matrizamenaza, Tablero matrizpos)
+        {
+
+            matriza = matrizamenaza;
+            matrizp = matrizpos;
+            POS[0] = xy[0];
+            POS[1] = xy[1];
+            ocuparlugar();
+            lugaresamenazados();
+
+        }
+        override public int[] GetPos() { return POS; }
+        public override int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (cont < 8)
+            {
+                cont = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            cont++;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        public override void desamenazar()
+        {
+            int freecases = 0, aux1 = 0;
+
+            matriza.desamenazarlugar(POS[1], POS[0]);
+            ///PARTE DE TORRE ARRIBA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] - i > -1)
+                {
+                    matriza.desamenazarlugar(POS[1] - i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE ABAJO 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] + i < 8)
+                {
+                    matriza.desamenazarlugar(POS[1] + i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE IZQUIERDA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] - i > -1) { matriza.desamenazarlugar(POS[1], POS[0] - i); } else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE DERECHA  
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] + i < 8) { matriza.desamenazarlugar(POS[1], POS[0] + i); } else { break; }
+                ///contador++;
+            }
+
+        }
+        public override void lugaresamenazados()
+        {
+            int freecases = 0, aux1 = 0;
+            matriza.amenazarlugar(POS[1], POS[0]);
+            ///PARTE DE TORRE ARRIBA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] - i > -1)
+                {
+                    matriza.amenazarlugar(POS[1] - i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE ABAJO 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[1] + i < 8)
+                {
+                    matriza.amenazarlugar(POS[1] + i, POS[0]);
+                }
+                else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE IZQUIERDA 
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] - i > -1) { matriza.amenazarlugar(POS[1], POS[0] - i); } else { break; }
+                ///contador++;
+            }
+            ///PARTE DE TORRE DERECHA  
+            for (int i = 1; i < 8; i++)
+            {
+                if (POS[0] + i < 8) { matriza.amenazarlugar(POS[1], POS[0] + i); } else { break; }
+                ///contador++;
+            }
+
+            ///return contador;
+
+        }
+        override public void ocuparlugar()
+        {
+            matrizp.setXY(POS[0], POS[1], 5);
+        }
+        override public void desocuparlugar(int x, int y)
+        {
+            matrizp.setXY(x, y, 0);
+        }
+        public Tablero getMatriza() { return matriza; }
+    }
+}
+/*
+namespace Ns7
+{
+    public class AlfilCaballo : Pieza
+    {
+        public Tablero matriza, matrizp;
+        int[] POS = { 0, 0 };
+
+        public AlfilCaballo(int[] xy, Tablero matrizamenaza, Tablero matrizpos)
+        {
+
+            matriza = matrizamenaza;
+            matrizp = matrizpos;
+            POS[0] = xy[0];
+            POS[1] = xy[1];
+            ocuparlugar();
+            lugaresamenazados();
+
+        }
+        override public int[] GetPos() { return POS; }        
+
+        override public void Mover(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] v6, int[] v7)
+        {
+
+            Random rd = new Random();
+            int aux0 = 0, aux1 = 0, auxx = 0, auxy = 0, freecases = 0, rango = 8, aux2 = 0, cont = 0;
+            int[] pos = { 0, 0 };
+            int[] chns = { 0, 1, 2, 3, 4, 5, 6, 7 };
+
+            if (POS[0] < 0 || POS[0] > 7)
+            {
+            }
+            else if (POS[1] < 0 || POS[1] > 7)
+            {
+            }
+            else
+            {
+                while (true)
+                {
+                    aux1 = rd.Next(0, 1);
+                    switch (aux0)
+                    {
+                        case 0:
+
+                            if (POS[0] > 0 && POS[1] > 2)
+                            {
+                                auxx = POS[0] - 1;
+                                auxy = POS[1] - 2;
+                            }
+                            else
+                            {
+                                auxx = 0; auxy = 0;
+                            }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 1:
+                            if (POS[0] > 2 && POS[1] > 1)
+                            {
+                                auxx = POS[0] - 2;
+                                auxy = POS[1] - 1;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 2:
+                            if (POS[0] > 2 && POS[1] < 6)
+                            {
+                                auxx = POS[0] - 2;
+                                auxy = POS[1] + 1;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 3:
+                            if (POS[0] > 2 && POS[1] < 5)
+                            {
+                                auxx = POS[0] - 1;
+                                auxy = POS[1] + 2;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 4:
+                            if (POS[0] < 7 && POS[1] > 2)
+                            {
+                                auxx = POS[0] + 1;
+                                auxy = POS[1] - 2;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 5:
+                            if (POS[0] < 6 && POS[1] > 1)
+                            {
+                                auxx = POS[0] + 2;
+                                auxy = POS[1] - 1;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 6:
+                            if (POS[0] > 1 && POS[0] < 7 && POS[1] < 6)
+                            {
+                                auxx = POS[0] + 2;
+                                auxy = POS[1] + 1;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 7:
+                            if (POS[0] < 6 && POS[1] < 5)
+                            {
+                                auxx = POS[0] + 1;
+                                auxy = POS[1] + 2;
+                            }
+                            else { auxx = 0; auxy = 0; }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = auxx;
+                                POS[1] = auxy;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+
+                            break;
+                        case 8: /// PARTE ALFIL IZQUIERDA
+                            aux1 = 0;
+                            for (int i = 0; i < 7; i++)
+                            {
+                                if (POS[0] - i > 0 && POS[1] - i > 0) { }
+                                else { cont = i; if (cont != 0) { aux1 = rd.Next(1, cont); } break; }
+                            }
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = POS[0] - aux1;
+                                POS[1] = POS[1] - aux1;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+                            break;
+                        case 9: /// PARTE ALFIL ABAJO DERECHA
+                            for (int i = 0; i < 7; i++)
+                            {
+                                if (POS[0] + i < 7 && POS[1] + i < 7) { }
+                                else { cont = i; if (cont != 0) { aux1 = rd.Next(1, cont); } break; }
+                            }
+
+                            aux1 = 0;
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = POS[0] + aux1;
+                                POS[1] = POS[1] + aux1;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+                            break;
+                        case 10: /// PARTE ALFIL ABAJO IZQUIERDA
+                            for (int i = 0; i < 7; i++)
+                            {
+                                if (POS[0] - i > 0 && POS[1] + i < 7) { }
+                                else { cont = i; if (cont != 0) { aux1 = rd.Next(1, cont); } break; }
+                            }
+
+                            aux1 = 0;
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = POS[0] - aux1;
+                                POS[1] = POS[1] + aux1;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+                            break;
+                        case 11: /// PARTE ALFIL ARRIBA DERECHA
+                            for (int i = 0; i < 7; i++)
+                            {
+                                if (POS[0] + i < 7 && POS[1] - i > 0) { }
+                                else { cont = i; if (cont != 0) { aux1 = rd.Next(1, cont); } break; }
+                            }
+
+                            aux1 = 0;
+
+                            if (NoPisar(v0, v1, v2, v3, v4, v5, v6, v7) == 1)
+                            {
+
+                            }
+                            else
+                            {
+                                desocuparlugar(POS[0], POS[1]); desamenazar();
+                                POS[0] = POS[0] + aux1;
+                                POS[1] = POS[1] - aux1;
+                                ocuparlugar();
+                                lugaresamenazados();
+                            }
+                            break;
+                    }
+                    if (rango > 1)
+                    {
+                        for (int i = 0; i < rango; i++)
+                        {
+                            if (chns[i] == aux0)
+                            {
+                                for (int j = i + 1; j < rango; j++)
+                                {
+                                    aux2 = chns[i];
+                                    chns[i] = chns[j];
+                                    chns[j] = aux2;
+                                }
+                            }
+                        }
+                    }
+                    rango--;
+                    if (rango == 0)
+                    {
+                        return;
+                    }
+                    aux0 = rd.Next(0, rango);
+                }
+            }
+        }
+
+        public override int NoPisar(int[] v0, int[] v1, int[] v2, int[] v3, int[] v4, int[] v5, int[] alfil1, int[] alfil2)
+        {
+            Random rdx = new Random();
+            Random rdy = new Random();
+
+            int cont = 0;
+
+            int[,] posiciones = { { v0[0], v0[1] },{ v1[0], v1[1] }, { v2[0], v2[1]}, { v3[0], v3[1] },
+                              { v4[0], v4[1]}, { v5[0], v5[1]}, { alfil1[0], alfil1[1]}, {alfil2[0], alfil2[1]}};
+
+            while (cont < 8)
+            {
+                cont = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    for (int j = 0; j < 7; j++)
+                    {
+                        if (i == j)
+                        {
+                        }
+                        else if (posiciones[i, 0] == posiciones[j, 0] && posiciones[i, 1] == posiciones[j, 1])
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            cont++;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        public override void desamenazar()
+        {
+            int aux1 = 0; int aux2 = 0;
+            matriza.desamenazarlugar(POS[1], POS[0]);
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            if (POS[0] - 1 > -1 && POS[1] - 1 > -1)
+            {
+                matriza.desamenazarlugar(POS[1] - 1, POS[0] - 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+
+            if (POS[0] + 1 < 8 && POS[1] + 1 < 8)
+            {
+                matriza.desamenazarlugar(POS[1] + 1, POS[0] + 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+
+            if (POS[0] - 1 > -1 && POS[1] + 1 < 8)
+            {
+                matriza.desamenazarlugar(POS[0] - 1, POS[1] + 1);
+            }
+
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+
+            if (POS[0] + 1 < 8 && POS[1] - 1 > -1)
+            {
+                matriza.desamenazarlugar(POS[0] + 1, POS[1] - 1);
+            }
+            /// 0
+            if (POS[0] > -1 && POS[1] > 1)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] - 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 1
+            if (POS[0] > 1 && POS[1] > 0)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] - 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 2
+            if (POS[0] > 1 && POS[1] < 6)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] + 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 3
+            if (POS[0] > 1 && POS[1] < 7)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] + 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 4
+            if (POS[0] < 8 && POS[1] > 1)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] - 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 5
+            if (POS[0] < 6 && POS[1] > 0)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] - 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 6
+            if (POS[0] > 0 && POS[0] < 8 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] + 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 7
+            if (POS[0] < 6 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] + 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+        }
+        public override void lugaresamenazados()
+        {
+            int freecases = 0, aux1 = 0, aux2 = 0;
+
+            matriza.amenazarlugar(POS[1], POS[0]);            
+            ///PARTE DE ALFIL ARRIBA IZQUIERDA nop
+            if (POS[0] - 1 > -1 && POS[1] - 1 > -1)
+            {
+                matriza.amenazarlugar(POS[1] - 1, POS[0] - 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO DERECHA nop                        
+
+            if (POS[0] + 1 < 8 && POS[1] + 1 < 8)
+            {
+                matriza.amenazarlugar(POS[1] + 1, POS[0] + 1);
+            }
+            ///contador++;
+
+            ///PARTE DE ALFIL ABAJO IZQUIERDA                                  
+
+            if (POS[0] - 1 > -1 && POS[1] + 1 < 8)
+            {
+                matriza.amenazarlugar(POS[0] - 1, POS[1] + 1);
+            }
+
+            ///PARTE DE ALFIL ARRIBA DERECHA                         
+
+            if (POS[0] + 1 < 8 && POS[1] - 1 > -1)
+            {
+                matriza.amenazarlugar(POS[0] + 1, POS[1] - 1);
+            }
+            /// 0
+            if (POS[0] > -1 && POS[1] > 1)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] - 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 1
+            if (POS[0] > 1 && POS[1] > 0)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] - 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 2
+            if (POS[0] > 1 && POS[1] < 6)
+            {
+                aux1 = POS[0] - 2;
+                aux2 = POS[1] + 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 3
+            if (POS[0] > 1 && POS[1] < 7)
+            {
+                aux1 = POS[0] - 1;
+                aux2 = POS[1] + 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 4
+            if (POS[0] < 8 && POS[1] > 1)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] - 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 5
+            if (POS[0] < 6 && POS[1] > 0)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] - 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 6
+            if (POS[0] > 0 && POS[0] < 8 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 2;
+                aux2 = POS[1] + 1;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+            /// 7
+            if (POS[0] < 6 && POS[1] < 6)
+            {
+                aux1 = POS[0] + 1;
+                aux2 = POS[1] + 2;
+                matriza.amenazarlugar(aux2, aux1);
+            }
+
+
+        }
+        override public void ocuparlugar()
+        {
+            matrizp.setXY(POS[0], POS[1], 6);
+        }
+        override public void desocuparlugar(int x, int y)
+        {
+            matrizp.setXY(x, y, 0);
+        }
+        public Tablero getMatriza() { return matriza; }
+    }
+}
+*/
+namespace Ns8
+{
+    public class Tablero
+    {
+        int[,] tablero = new int[8, 8];
+        public Tablero()
+        {
+
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < 7; j++)
+                {
+                    tablero[i, j] = 0;
+                }
+            }
+
+        }
+        public void amenazarlugar(int x, int y)
+        {
+            tablero[x, y] = tablero[x, y] + 1;
+        }
+        public void desamenazarlugar(int x, int y)
+        {
+            if (tablero[x, y] > -1)
+            {
+                tablero[x, y] = tablero[x, y] - 1;
+            }
+        }
+        public void setXY(int X, int Y, int pieza)
+        {
+            tablero[Y, X] = pieza;
+        }
+        public int[,] GetXY()
+        {
+            return tablero;
+        }
+    }
+}
